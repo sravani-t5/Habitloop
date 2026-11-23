@@ -1,0 +1,212 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "HabitLoop analytics-service",
+    "version": "1.0.0"
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "internalKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-internal-key"
+      },
+      "deviceToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-device-token"
+      }
+    }
+  },
+  "paths": {
+    "/api/analytics/summary": {
+      "get": {
+        "summary": "Completion rate, streaks, 30-day trend, best hours",
+        "tags": [
+          "analytics-service"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/hourly/{activityId}": {
+      "get": {
+        "summary": "Done/missed counts per hour of day for a habit (feeds Recommendations)",
+        "tags": [
+          "analytics-service"
+        ],
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/analytics/internal/events": {
+      "post": {
+        "summary": "Ingest an activity-log event (idempotent on logId)",
+        "tags": [
+          "analytics-service"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "internalKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "logId": {
+                    "type": "string"
+                  },
+                  "tenantId": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": "string"
+                  },
+                  "activityId": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "day": {
+                    "type": "string"
+                  },
+                  "hour": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "logId",
+                  "tenantId",
+                  "userId",
+                  "activityId",
+                  "status",
+                  "day",
+                  "hour"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analytics/internal/leaderboard": {
+      "post": {
+        "summary": "Done counts per user within a date range (Challenge Service)",
+        "tags": [
+          "analytics-service"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "internalKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tenantId": {
+                    "type": "string"
+                  },
+                  "userIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "since": {
+                    "type": "string"
+                  },
+                  "until": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "tenantId",
+                  "userIds",
+                  "since",
+                  "until"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
