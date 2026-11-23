@@ -1,0 +1,5 @@
+{
+  "name": "@habitloop/analytics-service", "version": "1.0.0", "main": "dist/index.js",
+  "scripts": { "build": "tsc -p .", "start": "node dist/index.js", "dev": "tsx watch src/index.ts" },
+  "dependencies": { "@habitloop/shared": "*", "@aws-sdk/client-dynamodb": "^3.600.0", "@aws-sdk/lib-dynamodb": "^3.600.0" }
+}
