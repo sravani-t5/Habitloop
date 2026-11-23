@@ -1,5 +1,5 @@
 {
   "name": "@habitloop/event-processor", "version": "1.0.0", "main": "dist/handler.js",
-  "scripts": { "build": "tsc -p .", "bundle": "esbuild src/handler.ts --bundle --platform=node --target=node20 --outfile=bundle/index.js && cd bundle && zip -q ../event-processor.zip index.js", "local": "node dist/local-server.js" },
-  "dependencies": { "express": "^4.19.2", "zod": "^3.23.8" }
+  "scripts": { "build": "tsc -p .", "bundle": "esbuild src/handler.ts --bundle --platform=node --target=node20 --external:@aws-sdk/* --outfile=bundle/index.js", "local": "node dist/local-server.js" },
+  "dependencies": { "@aws-sdk/client-secrets-manager": "^3.600.0", "express": "^4.19.2", "zod": "^3.23.8" }
 }

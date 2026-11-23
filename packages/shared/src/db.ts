@@ -22,3 +22,25 @@ export async function migrate(pool: Pool, sql: string): Promise<void> {
     }
   }
 }
+
+/** On AWS the RDS instance starts with only the "postgres" database. Each service creates its own on first boot. */
+export async function ensureDatabase(): Promise<void> {
+  const name = process.env.DB_NAME;
+  if (process.env.DB_AUTO_CREATE !== "true" || !name) return;
+  const ssl = process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : undefined;
+  const admin = new Pool({ host: process.env.DB_HOST, port: Number(process.env.DB_PORT || 5432), user: process.env.DB_USER, password: process.env.DB_PASSWORD, database: "postgres", ssl, max: 1 });
+  try {
+    for (let i = 1; i <= 30; i++) {
+      try {
+        const r = await admin.query("SELECT 1 FROM pg_database WHERE datname=$1", [name]);
+        if (!r.rowCount) await admin.query(`CREATE DATABASE "${name.replace(/"/g, "")}"`);
+        return;
+      } catch (e: any) {
+        if (e?.code === "42P04") return; // already exists (another replica won the race)
+        if (i === 30) throw e;
+        logger.warn({ attempt: i }, "database server not ready, retrying in 2s");
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+  } finally { await admin.end(); }
+}

@@ -1,4 +1,4 @@
-import { asyncHandler, authenticate, callService, createApp, getPool, HttpError, migrate, RouteDoc, start, z } from "@habitloop/shared";
+import { asyncHandler, authenticate, callService, createApp, ensureDatabase, getPool, HttpError, migrate, RouteDoc, start, z } from "@habitloop/shared";
 
 const routes: RouteDoc[] = [
   { method: "post", path: "", summary: "Create challenge (public or private)", body: { title: "string", description: "string?", visibility: "string (public|private)", goalTarget: "integer", startDate: "string (YYYY-MM-DD)", endDate: "string (YYYY-MM-DD)" } },
@@ -144,4 +144,4 @@ router.get("/:id/leaderboard", authenticate, asyncHandler(async (req, res) => {
   res.json({ challengeId: c.id, goalTarget: c.goal_target, leaderboard: board });
 }));
 
-(async () => { await migrate(pool, SQL); start(app); })();
+(async () => { await ensureDatabase(); await migrate(pool, SQL); start(app); })();

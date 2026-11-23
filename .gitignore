@@ -3,3 +3,8 @@ dist
 .env
 *.zip
 .DS_Store
+lambdas/event-processor/bundle
+infra/terraform/.terraform
+infra/terraform/*.tfstate*
+infra/terraform/*.zip
+infra/terraform/terraform.tfvars

@@ -5,6 +5,7 @@
  *  - Idempotency: the Activity Service dedupes on (tenantId, externalEventId)
  */
 import { z } from "zod";
+import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 const detailSchema = z.object({
   internalId: z.string().uuid(), integrationId: z.string().uuid(), tenantId: z.string().uuid(), userId: z.string().uuid(),
@@ -25,11 +26,21 @@ const RULES = {
 
 const ACTIVITY_URL = () => process.env.ACTIVITY_URL || "http://activity-service:3000";
 const INTEGRATION_URL = () => process.env.INTEGRATION_URL || "http://integration-service:3000";
-const hdr = () => ({ "content-type": "application/json", "x-internal-key": process.env.INTERNAL_API_KEY || "" });
+let cachedKey: string | undefined;
+/** Locally the key comes from an env var; on AWS it is read once from Secrets Manager (never stored in the function config). */
+async function internalKey(): Promise<string> {
+  if (process.env.INTERNAL_API_KEY) return process.env.INTERNAL_API_KEY;
+  if (!cachedKey) {
+    const r = await new SecretsManagerClient({}).send(new GetSecretValueCommand({ SecretId: process.env.APP_SECRET_ARN }));
+    cachedKey = JSON.parse(r.SecretString || "{}").internal_api_key;
+  }
+  return cachedKey || "";
+}
+const hdr = async () => ({ "content-type": "application/json", "x-internal-key": await internalKey() });
 
 async function markStatus(id: string | undefined, status: "PROCESSED" | "REJECTED", error?: string) {
   if (!id) return;
-  const r = await fetch(`${INTEGRATION_URL()}/api/integrations/internal/events/${id}/status`, { method: "POST", headers: hdr(), body: JSON.stringify({ status, error }) });
+  const r = await fetch(`${INTEGRATION_URL()}/api/integrations/internal/events/${id}/status`, { method: "POST", headers: await hdr(), body: JSON.stringify({ status, error }) });
   if (!r.ok) throw new Error(`status update failed ${r.status}`); // transient -> retry
 }
 
@@ -59,7 +70,7 @@ export const handler = async (event: { detail: unknown }) => {
     activityId: e.activityId, matchKeywords: e.activityId ? undefined : [...rule.keywords],
   };
 
-  const r = await fetch(`${ACTIVITY_URL()}/api/activities/internal/logs`, { method: "POST", headers: hdr(), body: JSON.stringify(normalized) });
+  const r = await fetch(`${ACTIVITY_URL()}/api/activities/internal/logs`, { method: "POST", headers: await hdr(), body: JSON.stringify(normalized) });
   if (r.status === 422 || r.status === 400) {
     const err = ((await r.json().catch(() => ({}))) as any).error || "rejected by activity service";
     await markStatus(e.internalId, "REJECTED", err);

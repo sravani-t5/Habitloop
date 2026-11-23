@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
-import { asyncHandler, authenticate, createApp, getPool, HttpError, logger, migrate, requireInternal, RouteDoc, start, z } from "@habitloop/shared";
+import { asyncHandler, authenticate, createApp, ensureDatabase, getPool, HttpError, logger, migrate, requireInternal, RouteDoc, start, z } from "@habitloop/shared";
 
 const routes: RouteDoc[] = [
   { method: "post", path: "", summary: "Connect a wearable / partner app. Returns a device token ONCE", body: { provider: "string", deviceLabel: "string?" } },
@@ -107,4 +107,4 @@ router.post("/internal/events/:id/status", requireInternal, asyncHandler(async (
   res.json({ ok: true });
 }));
 
-(async () => { await migrate(pool, SQL); start(app); })();
+(async () => { await ensureDatabase(); await migrate(pool, SQL); start(app); })();

@@ -1,4 +1,4 @@
-import { asyncHandler, authenticate, callService, createApp, getPool, HttpError, logger, migrate, requireInternal, RouteDoc, start, z } from "@habitloop/shared";
+import { asyncHandler, authenticate, callService, createApp, ensureDatabase, getPool, HttpError, logger, migrate, requireInternal, RouteDoc, start, z } from "@habitloop/shared";
 
 const routes: RouteDoc[] = [
   { method: "post", path: "", summary: "Create a habit", body: { name: "string", description: "string?", frequencyPerWeek: "integer?", scheduledTime: "string? (HH:MM)" } },
@@ -140,4 +140,4 @@ router.get("/:id/logs", authenticate, asyncHandler(async (req, res) => {
   res.json(r.rows.map(toLog));
 }));
 
-(async () => { await migrate(pool, SQL); start(app); })();
+(async () => { await ensureDatabase(); await migrate(pool, SQL); start(app); })();

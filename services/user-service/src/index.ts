@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { asyncHandler, authenticate, createApp, getPool, HttpError, migrate, RouteDoc, signToken, start, z } from "@habitloop/shared";
+import { asyncHandler, authenticate, createApp, ensureDatabase, getPool, HttpError, migrate, RouteDoc, signToken, start, z } from "@habitloop/shared";
 
 const routes: RouteDoc[] = [
   { method: "post", path: "/auth/signup", auth: "none", summary: "Register. Send tenantName to create a new tenant, or tenantId to join one", body: { email: "string", password: "string", name: "string", tenantName: "string?", tenantId: "string?" } },
@@ -72,4 +72,4 @@ router.get("/members", authenticate, asyncHandler(async (req, res) => {
   res.json(r.rows.map(present));
 }));
 
-(async () => { await migrate(pool, SQL); start(app); })();
+(async () => { await ensureDatabase(); await migrate(pool, SQL); start(app); })();

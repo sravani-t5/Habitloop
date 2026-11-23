@@ -1,4 +1,4 @@
-import { asyncHandler, authenticate, callService, createApp, getPool, HttpError, migrate, RouteDoc, start } from "@habitloop/shared";
+import { asyncHandler, authenticate, callService, createApp, ensureDatabase, getPool, HttpError, migrate, RouteDoc, start } from "@habitloop/shared";
 import { Habit, HourStat, suggest } from "./engine";
 
 const routes: RouteDoc[] = [
@@ -67,4 +67,4 @@ router.post("/:id/dismiss", authenticate, asyncHandler(async (req, res) => {
   res.json(toRec({ ...r, status: "dismissed" }));
 }));
 
-(async () => { await migrate(pool, SQL); start(app); })();
+(async () => { await ensureDatabase(); await migrate(pool, SQL); start(app); })();
