@@ -1,0 +1,83 @@
+# HabitLoop - run everything locally:  docker compose up --build
+x-service: &service
+  build: { context: ., args: {} }
+  restart: unless-stopped
+  environment: &env
+    JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+    INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-key}
+    APP_TZ: ${APP_TZ:-Asia/Kolkata}
+    ACTIVITY_URL: http://activity-service:3000
+    ANALYTICS_URL: http://analytics-service:3000
+    INTEGRATION_URL: http://integration-service:3000
+  depends_on: { postgres: { condition: service_healthy } }
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment: { POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-habit}" }
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres"], interval: 3s, timeout: 3s, retries: 20 }
+    ports: ["5432:5432"]
+
+  dynamodb:
+    image: amazon/dynamodb-local
+    command: -jar DynamoDBLocal.jar -inMemory -sharedDb
+    ports: ["8000:8000"]
+
+  user-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/user-service } }
+    environment: { <<: *env, DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD:-habit}@postgres:5432/users" }
+
+  activity-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/activity-service } }
+    environment: { <<: *env, DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD:-habit}@postgres:5432/activities" }
+
+  challenge-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/challenge-service } }
+    environment: { <<: *env, DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD:-habit}@postgres:5432/challenges" }
+
+  integration-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/integration-service } }
+    environment:
+      <<: *env
+      DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD:-habit}@postgres:5432/integrations"
+      EVENT_BUS: local                      # "eventbridge" on AWS
+      LOCAL_PROCESSOR_URL: http://event-processor:3000/invoke
+
+  recommendation-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/recommendation-service } }
+    environment: { <<: *env, DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD:-habit}@postgres:5432/recommendations" }
+
+  analytics-service:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: services/analytics-service } }
+    depends_on: [dynamodb]
+    environment: { <<: *env, DYNAMODB_ENDPOINT: "http://dynamodb:8000", DDB_AUTO_CREATE: "true", AWS_REGION: ap-south-1 }
+
+  # Local stand-in for "EventBridge -> Lambda" (same handler code that is deployed to AWS Lambda)
+  event-processor:
+    <<: *service
+    build: { context: ., args: { SERVICE_DIR: lambdas/event-processor } }
+    environment: { <<: *env, ENTRY: local-server.js, PORT: "3000" }
+    depends_on: []
+
+  frontend:
+    build: { context: ./frontend, args: { VITE_API_BASE: "same-origin" } }
+    ports: ["5173:80"]
+    depends_on: [gateway]
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes: ["./infra/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    ports: ["8080:80"]
+    depends_on: [user-service, activity-service, challenge-service, integration-service, analytics-service, recommendation-service]
+
+volumes:
+  pgdata:
