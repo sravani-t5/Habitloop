@@ -18,7 +18,7 @@ export class HlChart extends LitElement {
           const hd = (d.done / max) * (H - 6), hm = (d.missed / max) * (H - 6), x = i * bw + bw * 0.15, w = bw * 0.7;
           return svg`<rect x=${x} y=${H - hd} width=${w} height=${hd} rx="1.5" fill="var(--done, #12a67a)" />
             <rect x=${x} y=${H - hd - hm} width=${w} height=${hm} rx="1.5" fill="var(--missed, #e3a008)" />
-            ${i % labelEvery === 0 ? svg`<text x=${x + w / 2} y=${H + 12} text-anchor="middle">${d.label}</text>` : ''}`;
+            ${i % labelEvery === 0 ? svg`<text x=${i === 0 ? 0 : x + w / 2} y=${H + 12} text-anchor=${i === 0 ? "start" : "middle"}>${d.label}</text>` : ''}`;
         })}
       </svg>
       <div class="legend"><span><i style="background:var(--done,#12a67a)"></i>Done</span><span><i style="background:var(--missed,#e3a008)"></i>Missed</span></div>`;

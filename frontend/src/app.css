@@ -26,7 +26,7 @@ p { margin: 0; } a { color: var(--accent); }
 .grid { display: grid; gap: 16px; }
 .cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
 .cols-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.stack { display: grid; gap: 16px; }
+.stack { display: grid; gap: 16px; align-content: start; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .muted { color: var(--muted); } .small { font-size: 0.85rem; }
 label { display: grid; gap: 5px; font-weight: 500; font-size: 0.88rem; }
