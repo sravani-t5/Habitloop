@@ -107,3 +107,5 @@ docs/                       OpenAPI specs, Postman collection, diagrams, screens
 
 ## 6. AWS deployment
 _To be completed: see `docs/aws-deployment.md` (network diagram, service configuration and screenshots)._
+
+Screenshots of the application and the AWS console: [docs/aws-screenshots.md](docs/aws-screenshots.md)
